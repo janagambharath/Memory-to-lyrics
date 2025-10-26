@@ -10,14 +10,23 @@ app = Flask(__name__)
 app.secret_key = secrets.token_hex(16)
 
 # OpenRouter API Configuration
-client = OpenAI(
-    base_url="https://openrouter.ai/api/v1",
-    api_key=os.environ.get("OPENROUTER_API_KEY"),
-    default_headers={
-        "HTTP-Referer": "http://localhost:5000",
-        "X-Title": "Memory Lyrics Generator"
-    }
-)
+def get_openai_client():
+    """Initialize OpenAI client with OpenRouter configuration"""
+    api_key = os.environ.get("OPENROUTER_API_KEY")
+    if not api_key:
+        raise ValueError("OPENROUTER_API_KEY environment variable not set")
+    
+    return OpenAI(
+        base_url="https://openrouter.ai/api/v1",
+        api_key=api_key,
+        default_headers={
+            "HTTP-Referer": os.environ.get("APP_URL", "http://localhost:5000"),
+            "X-Title": "Memory Lyrics Generator"
+        }
+    )
+
+# Don't initialize client at module level - do it when needed
+client = None
 
 def create_lyrics_prompt(user_inputs):
     """Generate comprehensive prompt for lyrics generation"""
@@ -118,4 +127,6 @@ def result():
     return render_template('result.html', lyrics=lyrics, inputs=user_inputs)
 
 if __name__ == '__main__':
-    app.run(debug=True, port=5000)
+    # Get port from environment variable or use 5000 as default
+    port = int(os.environ.get('PORT', 5000))
+    app.run(host='0.0.0.0', port=port, debug=False)
