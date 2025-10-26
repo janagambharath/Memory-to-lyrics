@@ -9,7 +9,6 @@ load_dotenv()
 app = Flask(__name__)
 app.secret_key = secrets.token_hex(16)
 
-# OpenRouter API Configuration
 def get_openai_client():
     """Initialize OpenAI client with OpenRouter configuration"""
     api_key = os.environ.get("OPENROUTER_API_KEY")
@@ -24,9 +23,6 @@ def get_openai_client():
             "X-Title": "Memory Lyrics Generator"
         }
     )
-
-# Don't initialize client at module level - do it when needed
-client = None
 
 def create_lyrics_prompt(user_inputs):
     """Generate comprehensive prompt for lyrics generation"""
@@ -72,7 +68,6 @@ def index():
 @app.route('/generate', methods=['POST'])
 def generate():
     try:
-        # Extract form data
         user_inputs = {
             'memory': request.form.get('memory', '').strip(),
             'emotion': request.form.get('emotion', ''),
@@ -88,14 +83,14 @@ def generate():
             'avoid_cliches': request.form.getlist('avoid_cliches')
         }
 
-        # Validate required fields
         if not user_inputs['memory']:
             return jsonify({'error': 'Please describe your memory'}), 400
 
-        # Create prompt
         prompt = create_lyrics_prompt(user_inputs)
 
-        # Call OpenRouter API
+        # Initialize client when needed
+        client = get_openai_client()
+        
         response = client.chat.completions.create(
             model="meta-llama/llama-3.1-8b-instruct:free",
             messages=[
@@ -107,7 +102,6 @@ def generate():
 
         lyrics = response.choices[0].message.content.strip()
 
-        # Store in session for result page
         session['lyrics'] = lyrics
         session['user_inputs'] = user_inputs
 
@@ -127,6 +121,5 @@ def result():
     return render_template('result.html', lyrics=lyrics, inputs=user_inputs)
 
 if __name__ == '__main__':
-    # Get port from environment variable or use 5000 as default
     port = int(os.environ.get('PORT', 5000))
     app.run(host='0.0.0.0', port=port, debug=False)
