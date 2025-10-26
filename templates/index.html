@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Memory to Lyrics - Choose Your Mode</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="home-container">
+        <div class="home-content">
+            <h1>🎵 Memory to Lyrics Generator</h1>
+            <p class="tagline">Transform your precious memories into beautiful song lyrics</p>
+            
+            <div class="mode-selection">
+                <h2>Choose Your Experience</h2>
+                
+                <div class="mode-cards">
+                    <a href="/chat" class="mode-card chat-card">
+                        <div class="card-icon">💬</div>
+                        <h3>Chat Mode</h3>
+                        <p>Have a natural conversation with AI. The bot will ask you questions and guide you through creating your perfect song.</p>
+                        <ul class="features">
+                            <li>✨ Interactive conversation</li>
+                            <li>🤖 AI asks thoughtful questions</li>
+                            <li>💡 Personalized guidance</li>
+                            <li>🎯 Natural flow</li>
+                        </ul>
+                        <span class="btn-text">Start Chatting →</span>
+                    </a>
+                    
+                    <a href="/form" class="mode-card form-card">
+                        <div class="card-icon">📝</div>
+                        <h3>Form Mode</h3>
+                        <p>Fill out a detailed form with all your preferences at once. Quick and straightforward lyrics generation.</p>
+                        <ul class="features">
+                            <li>⚡ Quick submission</li>
+                            <li>📋 All options upfront</li>
+                            <li>🎨 Detailed customization</li>
+                            <li>⏱️ Faster results</li>
+                        </ul>
+                        <span class="btn-text">Fill Form →</span>
+                    </a>
+                </div>
+            </div>
+            
+            <div class="info-section">
+                <h3>How It Works</h3>
+                <div class="steps">
+                    <div class="step">
+                        <div class="step-number">1</div>
+                        <p>Share your memory or story</p>
+                    </div>
+                    <div class="step">
+                        <div class="step-number">2</div>
+                        <p>Provide music preferences</p>
+                    </div>
+                    <div class="step">
+                        <div class="step-number">3</div>
+                        <p>Get personalized lyrics</p>
+                    </div>
+                    <div class="step">
+                        <div class="step-number">4</div>
+                        <p>Copy and use your song</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
