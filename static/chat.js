@@ -112,7 +112,7 @@ chatForm.addEventListener('submit', async function(e) {
     showTyping();
     
     try {
-        const response = await fetch('/chat', {
+        const response = await fetch('/chat-message', {  // Fixed: changed from '/chat' to '/chat-message'
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
