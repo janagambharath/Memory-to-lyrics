@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Your Generated Lyrics</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='result.css') }}">
+</head>
+<body>
+    <div class="container">
+        <div class="back-link">
+            <a href="/">← Back to Home</a>
+        </div>
+
+        <header>
+            <h1>🎵 Your Generated Lyrics</h1>
+            <p class="subtitle">Based on your memory</p>
+        </header>
+
+        <div class="result-container">
+            <div class="memory-recap">
+                <h3>Memory Summary</h3>
+                <p><strong>Genre:</strong> {{ inputs.genre }}</p>
+                <p><strong>Emotion:</strong> {{ inputs.emotion }}</p>
+                <p><strong>Tone:</strong> {{ inputs.tone }}</p>
+            </div>
+
+            <div class="lyrics-container">
+                <div class="lyrics-header">
+                    <h2>Your Song Lyrics</h2>
+                    <div class="action-buttons">
+                        <button id="copyBtn" class="action-btn">
+                            📋 Copy
+                        </button>
+                        <button id="downloadBtn" class="action-btn">
+                            💾 Download
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="lyrics-content" id="lyricsContent">{{ lyrics }}</div>
+            </div>
+
+            <div class="action-section">
+                <a href="/form" class="secondary-btn">Generate Another (Form)</a>
+                <a href="/chat" class="secondary-btn">Try Chat Mode</a>
+            </div>
+
+            <div id="copyMessage" class="copy-message" style="display: none;">
+                ✓ Copied to clipboard!
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('copyBtn').addEventListener('click', function() {
+            const lyrics = document.getElementById('lyricsContent').textContent;
+            navigator.clipboard.writeText(lyrics).then(function() {
+                const msg = document.getElementById('copyMessage');
+                msg.style.display = 'block';
+                setTimeout(() => {
+                    msg.style.display = 'none';
+                }, 2000);
+            });
+        });
+
+        document.getElementById('downloadBtn').addEventListener('click', function() {
+            const lyrics = document.getElementById('lyricsContent').textContent;
+            const blob = new Blob([lyrics], { type: 'text/plain' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'my-song-lyrics.txt';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);
+        });
+    </script>
+</body>
+</html>
