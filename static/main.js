@@ -1,127 +1,209 @@
-// Character counter for memory textarea
-const memoryTextarea = document.getElementById('memory');
-const charCount = document.getElementById('memoryCount');
+const chatForm = document.getElementById('chatForm');
+const messageInput = document.getElementById('messageInput');
+const chatMessages = document.getElementById('chatMessages');
+const sendBtn = document.getElementById('sendBtn');
+const typingIndicator = document.getElementById('typingIndicator');
+const charCounter = document.getElementById('charCounter');
+const clearBtn = document.getElementById('clearBtn');
 
-if (memoryTextarea && charCount) {
-    memoryTextarea.addEventListener('input', function() {
-        const length = this.value.length;
-        charCount.textContent = `${length} characters`;
-        
-        if (length > 500) {
-            charCount.style.color = '#ff4444';
-        } else {
-            charCount.style.color = '#ff69b4';
-        }
-    });
-}
-
-// Form data persistence using in-memory storage (not localStorage)
-const form = document.getElementById('lyricsForm');
-let formDataCache = {};
-
-if (form) {
-    const formInputs = form.querySelectorAll('input, textarea, select');
+// Auto-resize textarea
+messageInput.addEventListener('input', function() {
+    this.style.height = 'auto';
+    this.style.height = Math.min(this.scrollHeight, 150) + 'px';
     
-    // Update character count if memory has value
-    if (memoryTextarea && memoryTextarea.value) {
-        charCount.textContent = `${memoryTextarea.value.length} characters`;
+    // Update character counter
+    const length = this.value.length;
+    charCounter.textContent = `${length} / 2000`;
+    
+    if (length > 1900) {
+        charCounter.style.color = '#ff4444';
+    } else {
+        charCounter.style.color = '#ff69b4';
     }
-
-    // Save data to memory on change
-    formInputs.forEach(input => {
-        input.addEventListener('change', function() {
-            if (this.type === 'checkbox') {
-                if (!formDataCache.checkboxes) formDataCache.checkboxes = {};
-                formDataCache.checkboxes[this.name] = this.checked;
-            } else {
-                formDataCache[this.name] = this.value;
-            }
-        });
-    });
-}
-
-// Form submission
-if (form) {
-    form.addEventListener('submit', async function(e) {
-        e.preventDefault();
-        
-        const submitBtn = document.getElementById('submitBtn');
-        const btnText = submitBtn.querySelector('.btn-text');
-        const btnLoader = submitBtn.querySelector('.btn-loader');
-        const errorMessage = document.getElementById('errorMessage');
-        
-        // Hide any previous errors
-        errorMessage.style.display = 'none';
-        
-        // Disable button and show loader
-        submitBtn.disabled = true;
-        btnText.style.display = 'none';
-        btnLoader.style.display = 'inline-block';
-        
-        try {
-            const formData = new FormData(form);
-            
-            const response = await fetch('/generate', {
-                method: 'POST',
-                body: formData
-            });
-            
-            const data = await response.json();
-            
-            if (data.success) {
-                // Clear cached form data
-                formDataCache = {};
-                
-                // Redirect to result page
-                window.location.href = data.redirect;
-            } else {
-                throw new Error(data.error || 'Generation failed');
-            }
-            
-        } catch (error) {
-            // Show error message
-            errorMessage.textContent = error.message || 'An error occurred. Please try again.';
-            errorMessage.style.display = 'block';
-            
-            // Re-enable button
-            submitBtn.disabled = false;
-            btnText.style.display = 'inline-block';
-            btnLoader.style.display = 'none';
-            
-            // Scroll to error message
-            errorMessage.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        }
-    });
-}
-
-// Add smooth scroll behavior
-document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-    anchor.addEventListener('click', function (e) {
-        e.preventDefault();
-        const target = document.querySelector(this.getAttribute('href'));
-        if (target) {
-            target.scrollIntoView({ behavior: 'smooth' });
-        }
-    });
 });
 
-// Form validation hints
-const requiredFields = document.querySelectorAll('[required]');
-requiredFields.forEach(field => {
-    field.addEventListener('invalid', function(e) {
+// Handle Enter key (Shift+Enter for new line)
+messageInput.addEventListener('keydown', function(e) {
+    if (e.key === 'Enter' && !e.shiftKey) {
         e.preventDefault();
-        this.style.borderColor = '#ff4444';
-        setTimeout(() => {
-            this.style.borderColor = '';
-        }, 3000);
-    });
+        chatForm.dispatchEvent(new Event('submit'));
+    }
+});
+
+// Add message to chat
+function addMessage(content, isUser = false) {
+    const messageDiv = document.createElement('div');
+    messageDiv.className = `message ${isUser ? 'user-message' : 'bot-message'}`;
     
-    field.addEventListener('input', function() {
-        if (this.validity.valid) {
-            this.style.borderColor = '#4caf50';
-            setTimeout(() => {
-                this.style.borderColor = '';
-            }, 1000);
+    const avatar = document.createElement('div');
+    avatar.className = 'message-avatar';
+    avatar.textContent = isUser ? '👤' : '🤖';
+    
+    const messageContent = document.createElement('div');
+    messageContent.className = 'message-content';
+    
+    // Format content with basic markdown support
+    const formattedContent = formatMessage(content);
+    messageContent.innerHTML = formattedContent;
+    
+    messageDiv.appendChild(avatar);
+    messageDiv.appendChild(messageContent);
+    
+    chatMessages.appendChild(messageDiv);
+    scrollToBottom();
+}
+
+// Format message with basic markdown
+function formatMessage(text) {
+    // Convert line breaks to paragraphs
+    let formatted = text.split('\n\n').map(para => {
+        if (para.trim().startsWith('[') && para.includes(']')) {
+            // Format song sections
+            return `<p><strong style="color: #ff69b4;">${para}</strong></p>`;
         }
-    });
+        return `<p>${para.replace(/\n/g, '<br>')}</p>`;
+    }).join('');
+    
+    // Bold text
+    formatted = formatted.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+    
+    // Italic text
+    formatted = formatted.replace(/\*(.*?)\*/g, '<em>$1</em>');
+    
+    return formatted;
+}
+
+// Show typing indicator
+function showTyping() {
+    typingIndicator.style.display = 'block';
+    scrollToBottom();
+}
+
+// Hide typing indicator
+function hideTyping() {
+    typingIndicator.style.display = 'none';
+}
+
+// Scroll to bottom of chat
+function scrollToBottom() {
+    setTimeout(() => {
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+    }, 100);
+}
+
+// Handle form submission
+chatForm.addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const message = messageInput.value.trim();
+    if (!message) return;
+    
+    // Add user message
+    addMessage(message, true);
+    
+    // Clear input
+    messageInput.value = '';
+    messageInput.style.height = 'auto';
+    charCounter.textContent = '0 / 2000';
+    
+    // Disable input while processing
+    messageInput.disabled = true;
+    sendBtn.disabled = true;
+    showTyping();
+    
+    try {
+        const response = await fetch('/chat', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ message: message })
+        });
+        
+        const data = await response.json();
+        
+        hideTyping();
+        
+        if (data.success) {
+            addMessage(data.response, false);
+            
+            // Add copy button if response contains lyrics
+            if (data.response.includes('[Verse') || data.response.includes('[Chorus')) {
+                addCopyButton();
+            }
+        } else {
+            addMessage(`❌ Error: ${data.error}`, false);
+        }
+        
+    } catch (error) {
+        hideTyping();
+        addMessage(`❌ Error: ${error.message}`, false);
+    } finally {
+        // Re-enable input
+        messageInput.disabled = false;
+        sendBtn.disabled = false;
+        messageInput.focus();
+    }
+});
+
+// Add copy button to last message
+function addCopyButton() {
+    const lastMessage = chatMessages.querySelector('.bot-message:last-child .message-content');
+    if (!lastMessage) return;
+    
+    const copyBtn = document.createElement('button');
+    copyBtn.className = 'copy-btn';
+    copyBtn.textContent = '📋 Copy Lyrics';
+    copyBtn.onclick = function() {
+        const text = lastMessage.textContent;
+        navigator.clipboard.writeText(text).then(() => {
+            copyBtn.textContent = '✓ Copied!';
+            copyBtn.style.background = '#4caf50';
+            copyBtn.style.borderColor = '#4caf50';
+            copyBtn.style.color = 'white';
+            setTimeout(() => {
+                copyBtn.textContent = '📋 Copy Lyrics';
+                copyBtn.style.background = '';
+                copyBtn.style.borderColor = '';
+                copyBtn.style.color = '';
+            }, 2000);
+        });
+    };
+    
+    lastMessage.appendChild(copyBtn);
+}
+
+// Clear conversation
+clearBtn.addEventListener('click', async function() {
+    if (!confirm('Are you sure you want to start a new conversation? This will clear all messages.')) {
+        return;
+    }
+    
+    try {
+        const response = await fetch('/clear', {
+            method: 'POST'
+        });
+        
+        if (response.ok) {
+            // Clear all messages except the initial one
+            chatMessages.innerHTML = `
+                <div class="message bot-message">
+                    <div class="message-avatar">🤖</div>
+                    <div class="message-content">
+                        <p>Hello! 👋 I'm here to help you transform your precious memories into beautiful song lyrics.</p>
+                        <p>Tell me about a memory or story that's special to you, and I'll help you turn it into a song. What memory would you like to write about?</p>
+                    </div>
+                </div>
+            `;
+            scrollToBottom();
+        }
+    } catch (error) {
+        alert('Error clearing conversation: ' + error.message);
+    }
+});
+
+// Focus input on load
+window.addEventListener('load', function() {
+    messageInput.focus();
+    scrollToBottom();
 });
