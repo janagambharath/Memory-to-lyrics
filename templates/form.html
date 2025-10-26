@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Form Mode - Memory to Lyrics</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='form.css') }}">
+</head>
+<body>
+    <div class="container">
+        <div class="back-link">
+            <a href="/">← Back to Home</a>
+        </div>
+
+        <header>
+            <h1>📝 Form Mode</h1>
+            <p class="subtitle">Fill out the details to generate your song lyrics</p>
+        </header>
+
+        <form id="lyricsForm" method="POST">
+            <!-- Section 1: Memory Details -->
+            <div class="form-section">
+                <h2>📖 Your Memory</h2>
+                <div class="form-group">
+                    <label for="memory">Describe your memory or story *</label>
+                    <textarea id="memory" name="memory" rows="5" required 
+                              placeholder="e.g., The summer I learned to swim with my grandfather at the lake..."></textarea>
+                    <span class="char-count" id="memoryCount">0 characters</span>
+                </div>
+
+                <div class="form-group">
+                    <label for="emotion">Main emotion *</label>
+                    <select id="emotion" name="emotion" required>
+                        <option value="">-- Select --</option>
+                        <option value="Joy">Joy</option>
+                        <option value="Sadness">Sadness</option>
+                        <option value="Nostalgia">Nostalgia</option>
+                        <option value="Love">Love</option>
+                        <option value="Hope">Hope</option>
+                        <option value="Melancholy">Melancholy</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Section 2: Song Style -->
+            <div class="form-section">
+                <h2>🎸 Song Style</h2>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="genre">Genre *</label>
+                        <select id="genre" name="genre" required>
+                            <option value="">-- Select --</option>
+                            <option value="Pop">Pop</option>
+                            <option value="Rock">Rock</option>
+                            <option value="Hip-Hop/Rap">Hip-Hop/Rap</option>
+                            <option value="Country">Country</option>
+                            <option value="Folk">Folk</option>
+                            <option value="R&B/Soul">R&B/Soul</option>
+                            <option value="Alternative/Indie">Alternative/Indie</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="tempo">Tempo *</label>
+                        <select id="tempo" name="tempo" required>
+                            <option value="">-- Select --</option>
+                            <option value="Slow & Melancholic">Slow & Melancholic</option>
+                            <option value="Medium & Reflective">Medium & Reflective</option>
+                            <option value="Upbeat & Energetic">Upbeat & Energetic</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Section 3: Writing Style -->
+            <div class="form-section">
+                <h2>✍️ Writing Style</h2>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="perspective">Perspective *</label>
+                        <select id="perspective" name="perspective" required>
+                            <option value="">-- Select --</option>
+                            <option value="First person (I/me)">First person (I/me)</option>
+                            <option value="Second person (you)">Second person (you)</option>
+                            <option value="Third person">Third person</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="mood">Mood *</label>
+                        <select id="mood" name="mood" required>
+                            <option value="">-- Select --</option>
+                            <option value="Intimate & Personal">Intimate & Personal</option>
+                            <option value="Universal & Relatable">Universal & Relatable</option>
+                            <option value="Poetic & Abstract">Poetic & Abstract</option>
+                            <option value="Direct & Honest">Direct & Honest</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="tone">Tone *</label>
+                    <select id="tone" name="tone" required>
+                        <option value="">-- Select --</option>
+                        <option value="Hopeful & uplifting">Hopeful & uplifting</option>
+                        <option value="Raw & emotional">Raw & emotional</option>
+                        <option value="Bittersweet">Bittersweet</option>
+                        <option value="Peaceful & accepting">Peaceful & accepting</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Section 4: Structure -->
+            <div class="form-section">
+                <h2>🎼 Song Structure</h2>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="structure">Structure *</label>
+                        <select id="structure" name="structure" required>
+                            <option value="">-- Select --</option>
+                            <option value="Verse-Chorus-Verse-Chorus-Bridge-Chorus">Standard (V-C-V-C-B-C)</option>
+                            <option value="Verse-Verse-Chorus-Chorus">Simple (V-V-C-C)</option>
+                            <option value="Short (2 verses + 1 chorus)">Short</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="length">Length *</label>
+                        <select id="length" name="length" required>
+                            <option value="">-- Select --</option>
+                            <option value="Short (1-2 minutes)">Short (1-2 min)</option>
+                            <option value="Medium (2-3 minutes)">Medium (2-3 min)</option>
+                            <option value="Long (3-4 minutes)">Long (3-4 min)</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Section 5: Special Details -->
+            <div class="form-section">
+                <h2>✨ Special Touches</h2>
+                <div class="form-group">
+                    <label for="special_phrases">Special phrases (optional)</label>
+                    <input type="text" id="special_phrases" name="special_phrases" 
+                           placeholder='e.g., "golden summer", "brave heart"'>
+                </div>
+
+                <div class="form-group">
+                    <label for="song_for">Song for *</label>
+                    <select id="song_for" name="song_for" required>
+                        <option value="">-- Select --</option>
+                        <option value="Myself">Myself</option>
+                        <option value="A loved one">A loved one</option>
+                        <option value="A friend">A friend</option>
+                        <option value="Anyone who relates">Anyone who relates</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Avoid clichés (optional):</label>
+                    <div class="checkbox-group">
+                        <label class="checkbox-label">
+                            <input type="checkbox" name="avoid_cliches" value="Avoid overused love metaphors">
+                            Love metaphors
+                        </label>
+                        <label class="checkbox-label">
+                            <input type="checkbox" name="avoid_cliches" value="Skip generic sad phrases">
+                            Generic phrases
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <button type="submit" class="submit-btn" id="submitBtn">
+                <span class="btn-text">Generate Lyrics</span>
+                <span class="btn-loader" style="display: none;">Generating...</span>
+            </button>
+        </form>
+
+        <div id="errorMessage" class="error-message" style="display: none;"></div>
+    </div>
+
+    <script src="{{ url_for('static', filename='form.js') }}"></script>
+</body>
+</html>
