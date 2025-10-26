@@ -1,211 +1,209 @@
-from flask import Flask, render_template, request, jsonify, session
-import os
-import requests
-import json
-from dotenv import load_dotenv
-import secrets
+const chatForm = document.getElementById('chatForm');
+const messageInput = document.getElementById('messageInput');
+const chatMessages = document.getElementById('chatMessages');
+const sendBtn = document.getElementById('sendBtn');
+const typingIndicator = document.getElementById('typingIndicator');
+const charCounter = document.getElementById('charCounter');
+const clearBtn = document.getElementById('clearBtn');
 
-load_dotenv()
-
-app = Flask(__name__)
-app.secret_key = secrets.token_hex(16)
-
-def call_openrouter_api(messages):
-    """Call OpenRouter API with conversation history"""
-    api_key = os.environ.get("OPENROUTER_API_KEY")
-    if not api_key:
-        raise ValueError("OPENROUTER_API_KEY not configured")
-
-    response = requests.post(
-        url="https://openrouter.ai/api/v1/chat/completions",
-        headers={
-            "Authorization": f"Bearer {api_key}",
-            "Content-Type": "application/json",
-            "HTTP-Referer": os.environ.get("APP_URL", "http://localhost:5000"),
-            "X-Title": "Memory Lyrics Generator"
-        },
-        data=json.dumps({
-            "model": "meta-llama/llama-3.3-70b-instruct:free",
-            "messages": messages,
-            "temperature": 0.8,
-            "max_tokens": 2000
-        }),
-        timeout=60
-    )
-
-    if response.status_code != 200:
-        error_msg = f"API Error: {response.status_code}"
-        try:
-            error_data = response.json()
-            error_msg = error_data.get('error', {}).get('message', error_msg)
-        except:
-            pass
-        raise Exception(error_msg)
-
-    response_data = response.json()
-    return response_data['choices'][0]['message']['content'].strip()
-
-def create_form_prompt(user_inputs):
-    """Generate prompt from form data"""
-    avoid_cliches = user_inputs.get('avoid_cliches', [])
-    if isinstance(avoid_cliches, str):
-        avoid_cliches = [avoid_cliches]
+// Auto-resize textarea
+messageInput.addEventListener('input', function() {
+    this.style.height = 'auto';
+    this.style.height = Math.min(this.scrollHeight, 150) + 'px';
     
-    prompt = f"""You are an expert songwriter and lyricist. Generate creative, emotionally resonant song lyrics based on the following details:
+    // Update character counter
+    const length = this.value.length;
+    charCounter.textContent = `${length} / 2000`;
+    
+    if (length > 1900) {
+        charCounter.style.color = '#ff4444';
+    } else {
+        charCounter.style.color = '#ff69b4';
+    }
+});
 
-**Memory/Story**: {user_inputs['memory']}
-**Main Emotion**: {user_inputs['emotion']}
-**Genre**: {user_inputs['genre']}
-**Tempo**: {user_inputs['tempo']}
-**Perspective**: {user_inputs['perspective']}
-**Mood**: {user_inputs['mood']}
-**Structure**: {user_inputs['structure']}
-**Length**: {user_inputs['length']}
-**Special Phrases to Include**: {user_inputs.get('special_phrases', 'None')}
-**Song is for/about**: {user_inputs['song_for']}
-**Tone**: {user_inputs['tone']}
-**Avoid Clichés**: {', '.join(avoid_cliches) if avoid_cliches else 'No specific restrictions'}
+// Handle Enter key (Shift+Enter for new line)
+messageInput.addEventListener('keydown', function(e) {
+    if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        chatForm.dispatchEvent(new Event('submit'));
+    }
+});
 
-**Instructions**:
-1. Create authentic, original lyrics that capture the essence of this memory
-2. Use vivid imagery and sensory details
-3. Ensure the lyrics match the specified genre, mood, and tone
-4. Follow the requested song structure (clearly label: [Verse 1], [Chorus], [Verse 2], [Bridge], etc.)
-5. Make the lyrics personal and emotionally resonant
-6. Incorporate any requested special phrases naturally
-7. Avoid the specified clichés and overused expressions
-8. Use varied rhyme schemes appropriate to the genre
-9. Keep the language authentic to the emotional truth of the memory
+// Add message to chat
+function addMessage(content, isUser = false) {
+    const messageDiv = document.createElement('div');
+    messageDiv.className = `message ${isUser ? 'user-message' : 'bot-message'}`;
+    
+    const avatar = document.createElement('div');
+    avatar.className = 'message-avatar';
+    avatar.textContent = isUser ? '👤' : '🤖';
+    
+    const messageContent = document.createElement('div');
+    messageContent.className = 'message-content';
+    
+    // Format content with basic markdown support
+    const formattedContent = formatMessage(content);
+    messageContent.innerHTML = formattedContent;
+    
+    messageDiv.appendChild(avatar);
+    messageDiv.appendChild(messageContent);
+    
+    chatMessages.appendChild(messageDiv);
+    scrollToBottom();
+}
 
-Generate only the song lyrics with clear section labels. Do not include explanations or commentary."""
-
-    return prompt
-
-@app.route('/')
-def index():
-    """Homepage with mode selection"""
-    return render_template('index.html')
-
-@app.route('/form')
-def form_mode():
-    """Form-based lyrics generation"""
-    return render_template('form.html')
-
-@app.route('/chat')
-def chat_mode():
-    """Chatbot-based lyrics generation"""
-    return render_template('chat.html')
-
-@app.route('/generate-form', methods=['POST'])
-def generate_form():
-    """Handle form submission"""
-    try:
-        user_inputs = {
-            'memory': request.form.get('memory', '').strip(),
-            'emotion': request.form.get('emotion', ''),
-            'genre': request.form.get('genre', ''),
-            'tempo': request.form.get('tempo', ''),
-            'perspective': request.form.get('perspective', ''),
-            'mood': request.form.get('mood', ''),
-            'structure': request.form.get('structure', ''),
-            'length': request.form.get('length', ''),
-            'special_phrases': request.form.get('special_phrases', '').strip(),
-            'song_for': request.form.get('song_for', ''),
-            'tone': request.form.get('tone', ''),
-            'avoid_cliches': request.form.getlist('avoid_cliches')
+// Format message with basic markdown
+function formatMessage(text) {
+    // Convert line breaks to paragraphs
+    let formatted = text.split('\n\n').map(para => {
+        if (para.trim().startsWith('[') && para.includes(']')) {
+            // Format song sections
+            return `<p><strong style="color: #ff69b4;">${para}</strong></p>`;
         }
-
-        if not user_inputs['memory']:
-            return jsonify({'error': 'Please describe your memory'}), 400
-
-        prompt = create_form_prompt(user_inputs)
-        
-        # Call API with single message
-        lyrics = call_openrouter_api([
-            {"role": "user", "content": prompt}
-        ])
-
-        session['lyrics'] = lyrics
-        session['user_inputs'] = user_inputs
-
-        return jsonify({'success': True, 'redirect': '/result'})
-
-    except Exception as e:
-        return jsonify({'error': f'Generation failed: {str(e)}'}), 500
-
-@app.route('/chat-message', methods=['POST'])
-def chat_message():
-    """Handle chat messages"""
-    try:
-        data = request.json
-        user_message = data.get('message', '').strip()
-        
-        if not user_message:
-            return jsonify({'error': 'Please enter a message'}), 400
-
-        # Initialize conversation history in session if not exists
-        if 'conversation' not in session:
-            session['conversation'] = [
-                {
-                    "role": "system",
-                    "content": """You are a creative and empathetic AI songwriter assistant. Your job is to help users transform their memories and stories into beautiful song lyrics.
-
-Guidelines:
-1. Have a natural, friendly conversation to understand their memory
-2. Ask thoughtful questions about emotions, details, and what makes the memory special
-3. Inquire about their music preferences (genre, mood, tempo, perspective)
-4. Once you have enough information, generate creative, emotionally resonant lyrics
-5. Be warm, encouraging, and make the process feel personal
-6. Format lyrics with clear sections like [Verse 1], [Chorus], [Bridge], etc.
-7. Use vivid imagery and sensory details
-8. Create authentic, original content that captures the essence of their memory
-
-Start by warmly greeting the user and asking them about a memory they'd like to turn into a song."""
-                }
-            ]
-            session.modified = True
-
-        # Add user message to conversation
-        session['conversation'].append({
-            "role": "user",
-            "content": user_message
-        })
-
-        # Get AI response
-        ai_response = call_openrouter_api(session['conversation'])
-
-        # Add AI response to conversation
-        session['conversation'].append({
-            "role": "assistant",
-            "content": ai_response
-        })
-        session.modified = True
-
-        return jsonify({
-            'success': True,
-            'response': ai_response
-        })
-
-    except Exception as e:
-        return jsonify({'error': f'Error: {str(e)}'}), 500
-
-@app.route('/clear', methods=['POST'])
-def clear_conversation():
-    """Clear conversation history"""
-    session.pop('conversation', None)
-    return jsonify({'success': True, 'message': 'Conversation cleared'})
-
-@app.route('/result')
-def result():
-    """Display generated lyrics"""
-    lyrics = session.get('lyrics', '')
-    user_inputs = session.get('user_inputs', {})
+        return `<p>${para.replace(/\n/g, '<br>')}</p>`;
+    }).join('');
     
-    if not lyrics:
-        return render_template('index.html')
+    // Bold text
+    formatted = formatted.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
     
-    return render_template('result.html', lyrics=lyrics, inputs=user_inputs)
+    // Italic text
+    formatted = formatted.replace(/\*(.*?)\*/g, '<em>$1</em>');
+    
+    return formatted;
+}
 
-if __name__ == '__main__':
-    port = int(os.environ.get('PORT', 5000))
-    app.run(host='0.0.0.0', port=port, debug=False)
+// Show typing indicator
+function showTyping() {
+    typingIndicator.style.display = 'block';
+    scrollToBottom();
+}
+
+// Hide typing indicator
+function hideTyping() {
+    typingIndicator.style.display = 'none';
+}
+
+// Scroll to bottom of chat
+function scrollToBottom() {
+    setTimeout(() => {
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+    }, 100);
+}
+
+// Handle form submission
+chatForm.addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const message = messageInput.value.trim();
+    if (!message) return;
+    
+    // Add user message
+    addMessage(message, true);
+    
+    // Clear input
+    messageInput.value = '';
+    messageInput.style.height = 'auto';
+    charCounter.textContent = '0 / 2000';
+    
+    // Disable input while processing
+    messageInput.disabled = true;
+    sendBtn.disabled = true;
+    showTyping();
+    
+    try {
+        const response = await fetch('/chat-message', {  // Fixed: changed from '/chat' to '/chat-message'
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ message: message })
+        });
+        
+        const data = await response.json();
+        
+        hideTyping();
+        
+        if (data.success) {
+            addMessage(data.response, false);
+            
+            // Add copy button if response contains lyrics
+            if (data.response.includes('[Verse') || data.response.includes('[Chorus')) {
+                addCopyButton();
+            }
+        } else {
+            addMessage(`❌ Error: ${data.error}`, false);
+        }
+        
+    } catch (error) {
+        hideTyping();
+        addMessage(`❌ Error: ${error.message}`, false);
+    } finally {
+        // Re-enable input
+        messageInput.disabled = false;
+        sendBtn.disabled = false;
+        messageInput.focus();
+    }
+});
+
+// Add copy button to last message
+function addCopyButton() {
+    const lastMessage = chatMessages.querySelector('.bot-message:last-child .message-content');
+    if (!lastMessage) return;
+    
+    const copyBtn = document.createElement('button');
+    copyBtn.className = 'copy-btn';
+    copyBtn.textContent = '📋 Copy Lyrics';
+    copyBtn.onclick = function() {
+        const text = lastMessage.textContent;
+        navigator.clipboard.writeText(text).then(() => {
+            copyBtn.textContent = '✓ Copied!';
+            copyBtn.style.background = '#4caf50';
+            copyBtn.style.borderColor = '#4caf50';
+            copyBtn.style.color = 'white';
+            setTimeout(() => {
+                copyBtn.textContent = '📋 Copy Lyrics';
+                copyBtn.style.background = '';
+                copyBtn.style.borderColor = '';
+                copyBtn.style.color = '';
+            }, 2000);
+        });
+    };
+    
+    lastMessage.appendChild(copyBtn);
+}
+
+// Clear conversation
+clearBtn.addEventListener('click', async function() {
+    if (!confirm('Are you sure you want to start a new conversation? This will clear all messages.')) {
+        return;
+    }
+    
+    try {
+        const response = await fetch('/clear', {
+            method: 'POST'
+        });
+        
+        if (response.ok) {
+            // Clear all messages except the initial one
+            chatMessages.innerHTML = `
+                <div class="message bot-message">
+                    <div class="message-avatar">🤖</div>
+                    <div class="message-content">
+                        <p>Hello! 👋 I'm here to help you transform your precious memories into beautiful song lyrics.</p>
+                        <p>Tell me about a memory or story that's special to you, and I'll help you turn it into a song. What memory would you like to write about?</p>
+                    </div>
+                </div>
+            `;
+            scrollToBottom();
+        }
+    } catch (error) {
+        alert('Error clearing conversation: ' + error.message);
+    }
+});
+
+// Focus input on load
+window.addEventListener('load', function() {
+    messageInput.focus();
+    scrollToBottom();
+});
