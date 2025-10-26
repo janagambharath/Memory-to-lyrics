@@ -22,7 +22,7 @@ def call_openrouter_api(messages):
             "Authorization": f"Bearer {api_key}",
             "Content-Type": "application/json",
             "HTTP-Referer": os.environ.get("APP_URL", "http://localhost:5000"),
-            "X-Title": "Memory Lyrics Chatbot"
+            "X-Title": "Memory Lyrics Generator"
         },
         data=json.dumps({
             "model": "meta-llama/llama-3.3-70b-instruct:free",
@@ -45,12 +45,97 @@ def call_openrouter_api(messages):
     response_data = response.json()
     return response_data['choices'][0]['message']['content'].strip()
 
+def create_form_prompt(user_inputs):
+    """Generate prompt from form data"""
+    avoid_cliches = user_inputs.get('avoid_cliches', [])
+    if isinstance(avoid_cliches, str):
+        avoid_cliches = [avoid_cliches]
+    
+    prompt = f"""You are an expert songwriter and lyricist. Generate creative, emotionally resonant song lyrics based on the following details:
+
+**Memory/Story**: {user_inputs['memory']}
+**Main Emotion**: {user_inputs['emotion']}
+**Genre**: {user_inputs['genre']}
+**Tempo**: {user_inputs['tempo']}
+**Perspective**: {user_inputs['perspective']}
+**Mood**: {user_inputs['mood']}
+**Structure**: {user_inputs['structure']}
+**Length**: {user_inputs['length']}
+**Special Phrases to Include**: {user_inputs.get('special_phrases', 'None')}
+**Song is for/about**: {user_inputs['song_for']}
+**Tone**: {user_inputs['tone']}
+**Avoid Clichés**: {', '.join(avoid_cliches) if avoid_cliches else 'No specific restrictions'}
+
+**Instructions**:
+1. Create authentic, original lyrics that capture the essence of this memory
+2. Use vivid imagery and sensory details
+3. Ensure the lyrics match the specified genre, mood, and tone
+4. Follow the requested song structure (clearly label: [Verse 1], [Chorus], [Verse 2], [Bridge], etc.)
+5. Make the lyrics personal and emotionally resonant
+6. Incorporate any requested special phrases naturally
+7. Avoid the specified clichés and overused expressions
+8. Use varied rhyme schemes appropriate to the genre
+9. Keep the language authentic to the emotional truth of the memory
+
+Generate only the song lyrics with clear section labels. Do not include explanations or commentary."""
+
+    return prompt
+
 @app.route('/')
 def index():
+    """Homepage with mode selection"""
+    return render_template('index.html')
+
+@app.route('/form')
+def form_mode():
+    """Form-based lyrics generation"""
+    return render_template('form.html')
+
+@app.route('/chat')
+def chat_mode():
+    """Chatbot-based lyrics generation"""
     return render_template('chat.html')
 
-@app.route('/chat', methods=['POST'])
-def chat():
+@app.route('/generate-form', methods=['POST'])
+def generate_form():
+    """Handle form submission"""
+    try:
+        user_inputs = {
+            'memory': request.form.get('memory', '').strip(),
+            'emotion': request.form.get('emotion', ''),
+            'genre': request.form.get('genre', ''),
+            'tempo': request.form.get('tempo', ''),
+            'perspective': request.form.get('perspective', ''),
+            'mood': request.form.get('mood', ''),
+            'structure': request.form.get('structure', ''),
+            'length': request.form.get('length', ''),
+            'special_phrases': request.form.get('special_phrases', '').strip(),
+            'song_for': request.form.get('song_for', ''),
+            'tone': request.form.get('tone', ''),
+            'avoid_cliches': request.form.getlist('avoid_cliches')
+        }
+
+        if not user_inputs['memory']:
+            return jsonify({'error': 'Please describe your memory'}), 400
+
+        prompt = create_form_prompt(user_inputs)
+        
+        # Call API with single message
+        lyrics = call_openrouter_api([
+            {"role": "user", "content": prompt}
+        ])
+
+        session['lyrics'] = lyrics
+        session['user_inputs'] = user_inputs
+
+        return jsonify({'success': True, 'redirect': '/result'})
+
+    except Exception as e:
+        return jsonify({'error': f'Generation failed: {str(e)}'}), 500
+
+@app.route('/chat-message', methods=['POST'])
+def chat_message():
+    """Handle chat messages"""
     try:
         data = request.json
         user_message = data.get('message', '').strip()
@@ -101,10 +186,6 @@ Start by warmly greeting the user and asking them about a memory they'd like to 
             'response': ai_response
         })
 
-    except requests.exceptions.Timeout:
-        return jsonify({'error': 'Request timed out. Please try again.'}), 500
-    except requests.exceptions.RequestException as e:
-        return jsonify({'error': f'Network error: {str(e)}'}), 500
     except Exception as e:
         return jsonify({'error': f'Error: {str(e)}'}), 500
 
@@ -113,6 +194,17 @@ def clear_conversation():
     """Clear conversation history"""
     session.pop('conversation', None)
     return jsonify({'success': True, 'message': 'Conversation cleared'})
+
+@app.route('/result')
+def result():
+    """Display generated lyrics"""
+    lyrics = session.get('lyrics', '')
+    user_inputs = session.get('user_inputs', {})
+    
+    if not lyrics:
+        return render_template('index.html')
+    
+    return render_template('result.html', lyrics=lyrics, inputs=user_inputs)
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
