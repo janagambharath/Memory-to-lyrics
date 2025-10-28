@@ -140,9 +140,26 @@ chatForm.addEventListener('submit', async function(e) {
             })
         });
         
-        const data = await response.json();
-        
         hideTyping();
+        
+        // Check if response is OK
+        if (!response.ok) {
+            const text = await response.text();
+            try {
+                const data = JSON.parse(text);
+                throw new Error(data.error || 'Request failed');
+            } catch {
+                throw new Error(`Server error: ${response.status}`);
+            }
+        }
+        
+        // Check content type
+        const contentType = response.headers.get('content-type');
+        if (!contentType || !contentType.includes('application/json')) {
+            throw new Error('Invalid response format from server');
+        }
+        
+        const data = await response.json();
         
         if (data.success) {
             addMessage(data.response, false);
@@ -157,6 +174,7 @@ chatForm.addEventListener('submit', async function(e) {
         
     } catch (error) {
         hideTyping();
+        console.error('Chat error:', error);
         addMessage(`❌ Error: ${error.message}`, false);
     } finally {
         // Re-enable input
@@ -202,6 +220,11 @@ function clearConversation(confirm = true) {
     
     fetch('/clear', {
         method: 'POST'
+    }).then(response => {
+        if (!response.ok) {
+            throw new Error('Failed to clear conversation');
+        }
+        return response.json();
     }).then(() => {
         // Clear all messages
         chatMessages.innerHTML = `
