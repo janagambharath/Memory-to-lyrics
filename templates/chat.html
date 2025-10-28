@@ -11,7 +11,23 @@
         <div class="chat-header">
             <h1>🎵 Memory to Lyrics Chatbot</h1>
             <p class="subtitle">Chat with AI to create your personalized song</p>
-            <button id="clearBtn" class="clear-btn" title="Start new conversation">🔄 New Chat</button>
+            
+            <div class="header-controls">
+                <div class="language-selector-compact">
+                    <label for="languageSelect" style="font-weight: 600;">🌍 Language:</label>
+                    <select id="languageSelect" class="language-dropdown">
+                        {% for key, lang in languages.items() %}
+                        <option value="{{ key }}" {% if key == 'english' %}selected{% endif %}>
+                            {{ lang.flag }} {{ lang.name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <button id="clearBtn" class="clear-btn" title="Start new conversation">
+                    🔄 New Chat
+                </button>
+            </div>
         </div>
 
         <div class="chat-messages" id="chatMessages">
@@ -20,6 +36,19 @@
                 <div class="message-content">
                     <p>Hello! 👋 I'm here to help you transform your precious memories into beautiful song lyrics.</p>
                     <p>Tell me about a memory or story that's special to you, and I'll help you turn it into a song. What memory would you like to write about?</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="typing-indicator" id="typingIndicator" style="display: none;">
+            <div class="message bot-message">
+                <div class="message-avatar">🤖</div>
+                <div class="message-content">
+                    <div class="typing-dots">
+                        <span></span>
+                        <span></span>
+                        <span></span>
+                    </div>
                 </div>
             </div>
         </div>
@@ -39,19 +68,6 @@
                 </div>
                 <div class="char-counter" id="charCounter">0 / 2000</div>
             </form>
-        </div>
-
-        <div class="typing-indicator" id="typingIndicator" style="display: none;">
-            <div class="message bot-message">
-                <div class="message-avatar">🤖</div>
-                <div class="message-content">
-                    <div class="typing-dots">
-                        <span></span>
-                        <span></span>
-                        <span></span>
-                    </div>
-                </div>
-            </div>
         </div>
     </div>
 
