@@ -75,6 +75,65 @@ h1 {
     color: #d1477d;
 }
 
+/* Language Selection Styles */
+.language-section {
+    background: linear-gradient(135deg, rgba(255, 215, 0, 0.1), rgba(255, 235, 238, 0.5)) !important;
+    border-left: 4px solid #ffd700 !important;
+}
+
+.language-selector {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 15px;
+    margin-top: 15px;
+}
+
+.language-option {
+    cursor: pointer;
+}
+
+.language-option input[type="radio"] {
+    display: none;
+}
+
+.language-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 20px 15px;
+    background: white;
+    border: 3px solid #ffc0cb;
+    border-radius: 12px;
+    transition: all 0.3s ease;
+    cursor: pointer;
+    min-height: 100px;
+}
+
+.language-option input[type="radio"]:checked + .language-card {
+    border-color: #ff69b4;
+    background: linear-gradient(135deg, rgba(255, 105, 180, 0.1), rgba(255, 20, 147, 0.1));
+    box-shadow: 0 4px 15px rgba(255, 105, 180, 0.3);
+    transform: translateY(-2px);
+}
+
+.language-card:hover {
+    border-color: #ff69b4;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(255, 182, 193, 0.3);
+}
+
+.language-flag {
+    font-size: 2.5em;
+    margin-bottom: 8px;
+}
+
+.language-name {
+    font-size: 1.1em;
+    font-weight: 600;
+    color: #d1477d;
+}
+
 .form-section {
     margin-bottom: 35px;
     padding: 25px;
@@ -216,7 +275,8 @@ textarea {
     }
 
     .form-row,
-    .checkbox-group {
+    .checkbox-group,
+    .language-selector {
         grid-template-columns: 1fr;
     }
 }
@@ -236,5 +296,9 @@ textarea {
 
     .form-section {
         padding: 15px;
+    }
+
+    .language-flag {
+        font-size: 2em;
     }
 }
