@@ -18,6 +18,23 @@
         </header>
 
         <form id="lyricsForm" method="POST">
+            <!-- Language Selection Section -->
+            <div class="form-section language-section">
+                <h2>🌍 Language Selection</h2>
+                <div class="language-selector">
+                    {% for key, lang in languages.items() %}
+                    <label class="language-option">
+                        <input type="radio" name="language" value="{{ key }}" 
+                               {% if key == 'english' %}checked{% endif %}>
+                        <span class="language-card">
+                            <span class="language-flag">{{ lang.flag }}</span>
+                            <span class="language-name">{{ lang.name }}</span>
+                        </span>
+                    </label>
+                    {% endfor %}
+                </div>
+            </div>
+
             <!-- Section 1: Memory Details -->
             <div class="form-section">
                 <h2>📖 Your Memory</h2>
@@ -32,12 +49,12 @@
                     <label for="emotion">Main emotion *</label>
                     <select id="emotion" name="emotion" required>
                         <option value="">-- Select --</option>
-                        <option value="Joy">Joy</option>
-                        <option value="Sadness">Sadness</option>
-                        <option value="Nostalgia">Nostalgia</option>
-                        <option value="Love">Love</option>
-                        <option value="Hope">Hope</option>
-                        <option value="Melancholy">Melancholy</option>
+                        <option value="Joy">Joy / ఆనందం / खुशी</option>
+                        <option value="Sadness">Sadness / దుఃఖం / दुख</option>
+                        <option value="Nostalgia">Nostalgia / జ్ఞాపకాలు / नॉस्टैल्जिया</option>
+                        <option value="Love">Love / ప్రేమ / प्यार</option>
+                        <option value="Hope">Hope / ఆశ / उम्मीद</option>
+                        <option value="Melancholy">Melancholy / విషాదం / उदासी</option>
                     </select>
                 </div>
             </div>
@@ -54,9 +71,10 @@
                             <option value="Rock">Rock</option>
                             <option value="Hip-Hop/Rap">Hip-Hop/Rap</option>
                             <option value="Country">Country</option>
-                            <option value="Folk">Folk</option>
+                            <option value="Folk">Folk / జానపద / लोक</option>
                             <option value="R&B/Soul">R&B/Soul</option>
                             <option value="Alternative/Indie">Alternative/Indie</option>
+                            <option value="Classical Fusion">Classical Fusion / క్లాసికల్ / शास्त्रीय</option>
                         </select>
                     </div>
 
@@ -80,9 +98,9 @@
                         <label for="perspective">Perspective *</label>
                         <select id="perspective" name="perspective" required>
                             <option value="">-- Select --</option>
-                            <option value="First person (I/me)">First person (I/me)</option>
-                            <option value="Second person (you)">Second person (you)</option>
-                            <option value="Third person">Third person</option>
+                            <option value="First person (I/me)">First person (I/me) / నేను / मैं</option>
+                            <option value="Second person (you)">Second person (you) / నీవు / तुम</option>
+                            <option value="Third person">Third person / అతను/ఆమె / वह</option>
                         </select>
                     </div>
 
