@@ -35,34 +35,42 @@ def call_openrouter_api(messages):
     if not api_key:
         raise ValueError("OPENROUTER_API_KEY not configured")
 
-    response = requests.post(
-        url="https://openrouter.ai/api/v1/chat/completions",
-        headers={
-            "Authorization": f"Bearer {api_key}",
-            "Content-Type": "application/json",
-            "HTTP-Referer": os.environ.get("APP_URL", "http://localhost:5000"),
-            "X-Title": "Memory Lyrics Generator"
-        },
-        data=json.dumps({
-            "model": "meta-llama/llama-3.3-70b-instruct:free",
-            "messages": messages,
-            "temperature": 0.8,
-            "max_tokens": 2000
-        }),
-        timeout=60
-    )
+    try:
+        response = requests.post(
+            url="https://openrouter.ai/api/v1/chat/completions",
+            headers={
+                "Authorization": f"Bearer {api_key}",
+                "Content-Type": "application/json",
+                "HTTP-Referer": os.environ.get("APP_URL", "http://localhost:5000"),
+                "X-Title": "Memory Lyrics Generator"
+            },
+            json={
+                "model": "meta-llama/llama-3.3-70b-instruct:free",
+                "messages": messages,
+                "temperature": 0.8,
+                "max_tokens": 2000
+            },
+            timeout=60
+        )
 
-    if response.status_code != 200:
-        error_msg = f"API Error: {response.status_code}"
-        try:
-            error_data = response.json()
-            error_msg = error_data.get('error', {}).get('message', error_msg)
-        except:
-            pass
-        raise Exception(error_msg)
+        if response.status_code != 200:
+            error_msg = f"API Error: {response.status_code}"
+            try:
+                error_data = response.json()
+                error_msg = error_data.get('error', {}).get('message', error_msg)
+            except:
+                pass
+            raise Exception(error_msg)
 
-    response_data = response.json()
-    return response_data['choices'][0]['message']['content'].strip()
+        response_data = response.json()
+        return response_data['choices'][0]['message']['content'].strip()
+    
+    except requests.exceptions.Timeout:
+        raise Exception("Request timed out. Please try again.")
+    except requests.exceptions.RequestException as e:
+        raise Exception(f"Network error: {str(e)}")
+    except Exception as e:
+        raise Exception(f"API call failed: {str(e)}")
 
 def create_form_prompt(user_inputs):
     """Generate prompt from form data with language support"""
@@ -208,7 +216,7 @@ def generate_form():
         session['lyrics'] = lyrics
         session['user_inputs'] = user_inputs
 
-        return jsonify({'success': True, 'redirect': '/result'})
+        return jsonify({'success': True, 'redirect': '/result'}), 200
 
     except Exception as e:
         return jsonify({'error': f'Generation failed: {str(e)}'}), 500
@@ -217,7 +225,10 @@ def generate_form():
 def chat_message():
     """Handle chat messages"""
     try:
-        data = request.json
+        data = request.get_json()
+        if not data:
+            return jsonify({'error': 'Invalid request'}), 400
+            
         user_message = data.get('message', '').strip()
         language = data.get('language', 'english')
         
@@ -254,7 +265,7 @@ def chat_message():
         return jsonify({
             'success': True,
             'response': ai_response
-        })
+        }), 200
 
     except Exception as e:
         return jsonify({'error': f'Error: {str(e)}'}), 500
@@ -264,7 +275,7 @@ def clear_conversation():
     """Clear conversation history"""
     session.pop('conversation', None)
     session.pop('chat_language', None)
-    return jsonify({'success': True, 'message': 'Conversation cleared'})
+    return jsonify({'success': True, 'message': 'Conversation cleared'}), 200
 
 @app.route('/result')
 def result():
@@ -279,4 +290,4 @@ def result():
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
-    app.run(host='0.0.0.0', port=port, debug=False)
+    app.run(host='0.0.0.0', port=port, debug=True)
