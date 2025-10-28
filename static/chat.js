@@ -5,6 +5,22 @@ const sendBtn = document.getElementById('sendBtn');
 const typingIndicator = document.getElementById('typingIndicator');
 const charCounter = document.getElementById('charCounter');
 const clearBtn = document.getElementById('clearBtn');
+const languageSelect = document.getElementById('languageSelect');
+
+let currentLanguage = 'english';
+
+// Language change handler
+languageSelect.addEventListener('change', function() {
+    const newLanguage = this.value;
+    if (newLanguage !== currentLanguage) {
+        if (confirm('Changing language will start a new conversation. Continue?')) {
+            currentLanguage = newLanguage;
+            clearConversation(false);
+        } else {
+            this.value = currentLanguage;
+        }
+    }
+});
 
 // Auto-resize textarea
 messageInput.addEventListener('input', function() {
@@ -109,15 +125,19 @@ chatForm.addEventListener('submit', async function(e) {
     // Disable input while processing
     messageInput.disabled = true;
     sendBtn.disabled = true;
+    languageSelect.disabled = true;
     showTyping();
     
     try {
-        const response = await fetch('/chat-message', {  // Fixed: changed from '/chat' to '/chat-message'
+        const response = await fetch('/chat-message', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify({ message: message })
+            body: JSON.stringify({ 
+                message: message,
+                language: currentLanguage 
+            })
         });
         
         const data = await response.json();
@@ -142,6 +162,7 @@ chatForm.addEventListener('submit', async function(e) {
         // Re-enable input
         messageInput.disabled = false;
         sendBtn.disabled = false;
+        languageSelect.disabled = false;
         messageInput.focus();
     }
 });
@@ -174,36 +195,35 @@ function addCopyButton() {
 }
 
 // Clear conversation
-clearBtn.addEventListener('click', async function() {
-    if (!confirm('Are you sure you want to start a new conversation? This will clear all messages.')) {
+function clearConversation(confirm = true) {
+    if (confirm && !window.confirm('Are you sure you want to start a new conversation? This will clear all messages.')) {
         return;
     }
     
-    try {
-        const response = await fetch('/clear', {
-            method: 'POST'
-        });
-        
-        if (response.ok) {
-            // Clear all messages except the initial one
-            chatMessages.innerHTML = `
-                <div class="message bot-message">
-                    <div class="message-avatar">🤖</div>
-                    <div class="message-content">
-                        <p>Hello! 👋 I'm here to help you transform your precious memories into beautiful song lyrics.</p>
-                        <p>Tell me about a memory or story that's special to you, and I'll help you turn it into a song. What memory would you like to write about?</p>
-                    </div>
+    fetch('/clear', {
+        method: 'POST'
+    }).then(() => {
+        // Clear all messages
+        chatMessages.innerHTML = `
+            <div class="message bot-message">
+                <div class="message-avatar">🤖</div>
+                <div class="message-content">
+                    <p>Hello! 👋 I'm here to help you transform your precious memories into beautiful song lyrics.</p>
+                    <p>Tell me about a memory or story that's special to you, and I'll help you turn it into a song. What memory would you like to write about?</p>
                 </div>
-            `;
-            scrollToBottom();
-        }
-    } catch (error) {
+            </div>
+        `;
+        scrollToBottom();
+    }).catch(error => {
         alert('Error clearing conversation: ' + error.message);
-    }
-});
+    });
+}
+
+clearBtn.addEventListener('click', () => clearConversation(true));
 
 // Focus input on load
 window.addEventListener('load', function() {
     messageInput.focus();
     scrollToBottom();
+    currentLanguage = languageSelect.value;
 });
