@@ -4,6 +4,7 @@ import requests
 import json
 from dotenv import load_dotenv
 import secrets
+import traceback
 
 load_dotenv()
 
@@ -203,22 +204,39 @@ def generate_form():
             'language': request.form.get('language', 'english')
         }
 
+        # Validate required fields
         if not user_inputs['memory']:
             return jsonify({'error': 'Please describe your memory'}), 400
+        
+        if not user_inputs['emotion']:
+            return jsonify({'error': 'Please select an emotion'}), 400
+            
+        if not user_inputs['genre']:
+            return jsonify({'error': 'Please select a genre'}), 400
 
+        # Create prompt
         prompt = create_form_prompt(user_inputs)
         
         # Call API with single message
-        lyrics = call_openrouter_api([
-            {"role": "user", "content": prompt}
-        ])
+        try:
+            lyrics = call_openrouter_api([
+                {"role": "user", "content": prompt}
+            ])
+        except Exception as api_error:
+            print(f"API Error: {str(api_error)}")
+            traceback.print_exc()
+            return jsonify({'error': f'API Error: {str(api_error)}'}), 500
 
+        # Store in session
         session['lyrics'] = lyrics
         session['user_inputs'] = user_inputs
+        session.modified = True  # Ensure session is saved
 
         return jsonify({'success': True, 'redirect': '/result'}), 200
 
     except Exception as e:
+        print(f"Generation Error: {str(e)}")
+        traceback.print_exc()
         return jsonify({'error': f'Generation failed: {str(e)}'}), 500
 
 @app.route('/chat-message', methods=['POST'])
@@ -268,6 +286,8 @@ def chat_message():
         }), 200
 
     except Exception as e:
+        print(f"Chat Error: {str(e)}")
+        traceback.print_exc()
         return jsonify({'error': f'Error: {str(e)}'}), 500
 
 @app.route('/clear', methods=['POST'])
@@ -275,6 +295,7 @@ def clear_conversation():
     """Clear conversation history"""
     session.pop('conversation', None)
     session.pop('chat_language', None)
+    session.modified = True
     return jsonify({'success': True, 'message': 'Conversation cleared'}), 200
 
 @app.route('/result')
