@@ -5,11 +5,17 @@ import json
 from dotenv import load_dotenv
 import secrets
 import traceback
+import time
 
 load_dotenv()
 
 app = Flask(__name__)
 app.secret_key = secrets.token_hex(16)
+
+# Configure session
+app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
+app.config['SESSION_COOKIE_SECURE'] = False  # Set to True in production with HTTPS
+app.config['PERMANENT_SESSION_LIFETIME'] = 3600  # 1 hour
 
 # Language configurations
 LANGUAGES = {
@@ -30,48 +36,87 @@ LANGUAGES = {
     }
 }
 
-def call_openrouter_api(messages):
+def call_openrouter_api(messages, max_retries=2):
     """Call OpenRouter API with conversation history"""
     api_key = os.environ.get("OPENROUTER_API_KEY")
     if not api_key:
-        raise ValueError("OPENROUTER_API_KEY not configured")
+        raise ValueError("OPENROUTER_API_KEY not configured. Please check your .env file.")
 
-    try:
-        response = requests.post(
-            url="https://openrouter.ai/api/v1/chat/completions",
-            headers={
-                "Authorization": f"Bearer {api_key}",
-                "Content-Type": "application/json",
-                "HTTP-Referer": os.environ.get("APP_URL", "http://localhost:5000"),
-                "X-Title": "Memory Lyrics Generator"
-            },
-            json={
-                "model": "meta-llama/llama-3.3-70b-instruct:free",
-                "messages": messages,
-                "temperature": 0.8,
-                "max_tokens": 2000
-            },
-            timeout=60
-        )
+    for attempt in range(max_retries):
+        try:
+            print(f"API Call Attempt {attempt + 1}/{max_retries}")
+            print(f"Sending {len(messages)} messages to API")
+            
+            response = requests.post(
+                url="https://openrouter.ai/api/v1/chat/completions",
+                headers={
+                    "Authorization": f"Bearer {api_key}",
+                    "Content-Type": "application/json",
+                    "HTTP-Referer": os.environ.get("APP_URL", "http://localhost:5000"),
+                    "X-Title": "Memory Lyrics Generator"
+                },
+                json={
+                    "model": "meta-llama/llama-3.3-70b-instruct:free",
+                    "messages": messages,
+                    "temperature": 0.8,
+                    "max_tokens": 2000
+                },
+                timeout=90  # Increased timeout to 90 seconds
+            )
 
-        if response.status_code != 200:
-            error_msg = f"API Error: {response.status_code}"
-            try:
-                error_data = response.json()
-                error_msg = error_data.get('error', {}).get('message', error_msg)
-            except:
-                pass
-            raise Exception(error_msg)
+            print(f"API Response Status: {response.status_code}")
 
-        response_data = response.json()
-        return response_data['choices'][0]['message']['content'].strip()
+            if response.status_code == 200:
+                response_data = response.json()
+                content = response_data['choices'][0]['message']['content'].strip()
+                print(f"API Response received: {len(content)} characters")
+                return content
+            
+            # Handle specific error codes
+            elif response.status_code == 502:
+                if attempt < max_retries - 1:
+                    wait_time = (attempt + 1) * 2
+                    print(f"502 error, retrying in {wait_time} seconds...")
+                    time.sleep(wait_time)
+                    continue
+                else:
+                    raise Exception("The AI service is temporarily unavailable. Please try again in a moment.")
+            
+            elif response.status_code == 429:
+                raise Exception("Rate limit reached. Please wait a moment and try again.")
+            
+            elif response.status_code == 401:
+                raise Exception("API key is invalid. Please check your configuration.")
+            
+            else:
+                error_msg = f"API Error {response.status_code}"
+                try:
+                    error_data = response.json()
+                    error_msg = error_data.get('error', {}).get('message', error_msg)
+                except:
+                    error_msg = f"API returned status {response.status_code}"
+                raise Exception(error_msg)
+        
+        except requests.exceptions.Timeout:
+            if attempt < max_retries - 1:
+                print(f"Timeout, retrying...")
+                time.sleep(2)
+                continue
+            else:
+                raise Exception("Request timed out. The AI service is taking too long. Please try again.")
+        
+        except requests.exceptions.ConnectionError:
+            if attempt < max_retries - 1:
+                print(f"Connection error, retrying...")
+                time.sleep(2)
+                continue
+            else:
+                raise Exception("Cannot connect to AI service. Please check your internet connection.")
+        
+        except requests.exceptions.RequestException as e:
+            raise Exception(f"Network error: {str(e)}")
     
-    except requests.exceptions.Timeout:
-        raise Exception("Request timed out. Please try again.")
-    except requests.exceptions.RequestException as e:
-        raise Exception(f"Network error: {str(e)}")
-    except Exception as e:
-        raise Exception(f"API call failed: {str(e)}")
+    raise Exception("Failed to get response from AI service after multiple attempts.")
 
 def create_form_prompt(user_inputs):
     """Generate prompt from form data with language support"""
@@ -188,6 +233,8 @@ def chat_mode():
 def generate_form():
     """Handle form submission"""
     try:
+        print("=== Form Submission Received ===")
+        
         user_inputs = {
             'memory': request.form.get('memory', '').strip(),
             'emotion': request.form.get('emotion', ''),
@@ -204,6 +251,9 @@ def generate_form():
             'language': request.form.get('language', 'english')
         }
 
+        print(f"Language: {user_inputs['language']}")
+        print(f"Memory length: {len(user_inputs['memory'])} chars")
+
         # Validate required fields
         if not user_inputs['memory']:
             return jsonify({'error': 'Please describe your memory'}), 400
@@ -216,39 +266,58 @@ def generate_form():
 
         # Create prompt
         prompt = create_form_prompt(user_inputs)
+        print(f"Prompt created: {len(prompt)} chars")
         
         # Call API with single message
-        try:
-            lyrics = call_openrouter_api([
-                {"role": "user", "content": prompt}
-            ])
-        except Exception as api_error:
-            print(f"API Error: {str(api_error)}")
-            traceback.print_exc()
-            return jsonify({'error': f'API Error: {str(api_error)}'}), 500
+        print("Calling OpenRouter API...")
+        lyrics = call_openrouter_api([
+            {"role": "user", "content": prompt}
+        ])
+        
+        print(f"Lyrics generated: {len(lyrics)} chars")
 
         # Store in session
         session['lyrics'] = lyrics
         session['user_inputs'] = user_inputs
-        session.modified = True  # Ensure session is saved
+        session.modified = True
 
+        print("Session saved successfully")
         return jsonify({'success': True, 'redirect': '/result'}), 200
 
+    except ValueError as ve:
+        print(f"Validation Error: {str(ve)}")
+        return jsonify({'error': str(ve)}), 400
+    
     except Exception as e:
         print(f"Generation Error: {str(e)}")
         traceback.print_exc()
-        return jsonify({'error': f'Generation failed: {str(e)}'}), 500
+        error_message = str(e)
+        
+        # Provide user-friendly error messages
+        if "OPENROUTER_API_KEY" in error_message:
+            error_message = "API key not configured. Please contact the administrator."
+        elif "timed out" in error_message.lower():
+            error_message = "Request timed out. Please try again with a shorter memory description."
+        elif "temporarily unavailable" in error_message.lower():
+            error_message = "AI service is temporarily unavailable. Please try again in a moment."
+        
+        return jsonify({'error': error_message}), 500
 
 @app.route('/chat-message', methods=['POST'])
 def chat_message():
     """Handle chat messages"""
     try:
+        print("=== Chat Message Received ===")
+        
         data = request.get_json()
         if not data:
             return jsonify({'error': 'Invalid request'}), 400
             
         user_message = data.get('message', '').strip()
         language = data.get('language', 'english')
+        
+        print(f"Language: {language}")
+        print(f"Message length: {len(user_message)} chars")
         
         if not user_message:
             return jsonify({'error': 'Please enter a message'}), 400
@@ -263,6 +332,7 @@ def chat_message():
             ]
             session['chat_language'] = language
             session.modified = True
+            print("New conversation started")
 
         # Add user message to conversation
         session['conversation'].append({
@@ -270,8 +340,13 @@ def chat_message():
             "content": user_message
         })
 
+        print(f"Conversation history: {len(session['conversation'])} messages")
+        print("Calling OpenRouter API...")
+        
         # Get AI response
         ai_response = call_openrouter_api(session['conversation'])
+        
+        print(f"AI response: {len(ai_response)} chars")
 
         # Add AI response to conversation
         session['conversation'].append({
@@ -288,15 +363,29 @@ def chat_message():
     except Exception as e:
         print(f"Chat Error: {str(e)}")
         traceback.print_exc()
-        return jsonify({'error': f'Error: {str(e)}'}), 500
+        error_message = str(e)
+        
+        # Provide user-friendly error messages
+        if "OPENROUTER_API_KEY" in error_message:
+            error_message = "API key not configured. Please contact the administrator."
+        elif "timed out" in error_message.lower():
+            error_message = "Request timed out. Please try with a shorter message."
+        elif "temporarily unavailable" in error_message.lower():
+            error_message = "AI service is temporarily unavailable. Please try again in a moment."
+        
+        return jsonify({'error': error_message}), 500
 
 @app.route('/clear', methods=['POST'])
 def clear_conversation():
     """Clear conversation history"""
-    session.pop('conversation', None)
-    session.pop('chat_language', None)
-    session.modified = True
-    return jsonify({'success': True, 'message': 'Conversation cleared'}), 200
+    try:
+        session.pop('conversation', None)
+        session.pop('chat_language', None)
+        session.modified = True
+        return jsonify({'success': True, 'message': 'Conversation cleared'}), 200
+    except Exception as e:
+        print(f"Clear Error: {str(e)}")
+        return jsonify({'error': 'Failed to clear conversation'}), 500
 
 @app.route('/result')
 def result():
@@ -309,6 +398,19 @@ def result():
     
     return render_template('result.html', lyrics=lyrics, inputs=user_inputs, languages=LANGUAGES)
 
+@app.route('/health')
+def health():
+    """Health check endpoint"""
+    return jsonify({'status': 'ok', 'message': 'Server is running'}), 200
+
 if __name__ == '__main__':
+    # Check if API key is configured
+    if not os.environ.get("OPENROUTER_API_KEY"):
+        print("WARNING: OPENROUTER_API_KEY not found in environment variables!")
+        print("Please create a .env file with your API key.")
+    else:
+        print("API key configured successfully")
+    
     port = int(os.environ.get('PORT', 5000))
+    print(f"Starting server on port {port}...")
     app.run(host='0.0.0.0', port=port, debug=True)
