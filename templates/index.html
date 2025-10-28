@@ -12,6 +12,16 @@
             <h1>🎵 Memory to Lyrics Generator</h1>
             <p class="tagline">Transform your precious memories into beautiful song lyrics</p>
             
+            <!-- Language Support Banner -->
+            <div class="language-banner">
+                <h3>🌍 Now Supporting Multiple Languages!</h3>
+                <div class="supported-languages">
+                    {% for key, lang in languages.items() %}
+                    <span class="lang-badge">{{ lang.flag }} {{ lang.name }}</span>
+                    {% endfor %}
+                </div>
+            </div>
+            
             <div class="mode-selection">
                 <h2>Choose Your Experience</h2>
                 
@@ -24,7 +34,7 @@
                             <li>✨ Interactive conversation</li>
                             <li>🤖 AI asks thoughtful questions</li>
                             <li>💡 Personalized guidance</li>
-                            <li>🎯 Natural flow</li>
+                            <li>🌍 Multi-language support</li>
                         </ul>
                         <span class="btn-text">Start Chatting →</span>
                     </a>
@@ -37,7 +47,7 @@
                             <li>⚡ Quick submission</li>
                             <li>📋 All options upfront</li>
                             <li>🎨 Detailed customization</li>
-                            <li>⏱️ Faster results</li>
+                            <li>🌍 Choose your language</li>
                         </ul>
                         <span class="btn-text">Fill Form →</span>
                     </a>
@@ -49,19 +59,38 @@
                 <div class="steps">
                     <div class="step">
                         <div class="step-number">1</div>
-                        <p>Share your memory or story</p>
+                        <p>Choose your language</p>
                     </div>
                     <div class="step">
                         <div class="step-number">2</div>
-                        <p>Provide music preferences</p>
+                        <p>Share your memory</p>
                     </div>
                     <div class="step">
                         <div class="step-number">3</div>
-                        <p>Get personalized lyrics</p>
+                        <p>Customize preferences</p>
                     </div>
                     <div class="step">
                         <div class="step-number">4</div>
-                        <p>Copy and use your song</p>
+                        <p>Get beautiful lyrics</p>
+                    </div>
+                </div>
+            </div>
+
+
+                    <div class="highlight-item">
+                        <div class="highlight-icon">🎭</div>
+                        <h4>Cultural Authenticity</h4>
+                        <p>Native expressions, idioms, and poetic traditions for each language</p>
+                    </div>
+                    <div class="highlight-item">
+                        <div class="highlight-icon">🎨</div>
+                        <h4>Full Customization</h4>
+                        <p>Choose genre, mood, tempo, tone, and structure</p>
+                    </div>
+                    <div class="highlight-item">
+                        <div class="highlight-icon">❤️</div>
+                        <h4>Emotional Resonance</h4>
+                        <p>AI captures the essence and emotions of your memories</p>
                     </div>
                 </div>
             </div>
