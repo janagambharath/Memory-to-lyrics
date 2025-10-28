@@ -237,3 +237,123 @@ body::before {
         grid-template-columns: 1fr;
     }
 }
+
+/* Language Banner Styles - Add to style.css */
+.language-banner {
+    background: linear-gradient(135deg, rgba(255, 215, 0, 0.15), rgba(255, 235, 238, 0.3));
+    padding: 30px;
+    border-radius: 15px;
+    margin: 40px auto;
+    max-width: 800px;
+    border: 2px solid rgba(255, 215, 0, 0.3);
+    box-shadow: 0 5px 20px rgba(255, 182, 193, 0.2);
+}
+
+.language-banner h3 {
+    font-size: 1.5em;
+    color: #ff69b4;
+    margin-bottom: 20px;
+}
+
+.supported-languages {
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+    flex-wrap: wrap;
+}
+
+.lang-badge {
+    background: white;
+    padding: 10px 20px;
+    border-radius: 20px;
+    font-size: 1em;
+    font-weight: 600;
+    color: #ff69b4;
+    border: 2px solid #ffc0cb;
+    box-shadow: 0 2px 8px rgba(255, 182, 193, 0.2);
+    transition: all 0.3s ease;
+}
+
+.lang-badge:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(255, 182, 193, 0.3);
+    border-color: #ff69b4;
+}
+
+/* Highlights Section */
+.highlights {
+    margin-top: 60px;
+    padding: 40px;
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(10px);
+    border-radius: 20px;
+    box-shadow: 0 10px 30px rgba(255, 182, 193, 0.3);
+}
+
+.highlights h3 {
+    font-size: 2em;
+    color: #ff69b4;
+    margin-bottom: 40px;
+    text-align: center;
+}
+
+.highlight-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 30px;
+}
+
+.highlight-item {
+    text-align: center;
+    padding: 20px;
+}
+
+.highlight-icon {
+    font-size: 3em;
+    margin-bottom: 15px;
+}
+
+.highlight-item h4 {
+    font-size: 1.3em;
+    color: #ff69b4;
+    margin-bottom: 10px;
+}
+
+.highlight-item p {
+    color: #666;
+    font-size: 1em;
+    line-height: 1.6;
+}
+
+/* Responsive updates for new sections */
+@media (max-width: 768px) {
+    .language-banner {
+        padding: 20px;
+    }
+
+    .lang-badge {
+        font-size: 0.9em;
+        padding: 8px 15px;
+    }
+
+    .highlight-grid {
+        grid-template-columns: 1fr;
+        gap: 20px;
+    }
+}
+
+@media (max-width: 480px) {
+    .language-banner h3 {
+        font-size: 1.2em;
+    }
+
+    .supported-languages {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .lang-badge {
+        width: 100%;
+        text-align: center;
+    }
+}
